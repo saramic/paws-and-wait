@@ -1,0 +1,20 @@
+- label: Other builds
+  items:
+    - name: Vape Cell EV
+      url: https://saramic.github.io/vape-cell-EV/
+    - name: Sentinel Box
+      url: https://saramic.github.io/sentinel-box/
+    - name: Green Brain
+      url: https://saramic.github.io/green-brain/
+- label: Learning
+  items:
+    - name: Learning
+      url: https://saramic.github.io/learning/
+    - name: Ham Radio
+      url: https://saramic.github.io/ham-radio/
+- label: Collaboration
+  items:
+    - name: Hall-w-EV
+      url: https://tamadillo.github.io/hall-w-EV/
+    - name: Creek Microcosm Lab
+      url: https://saramic.github.io/creek-microcosm-lab/

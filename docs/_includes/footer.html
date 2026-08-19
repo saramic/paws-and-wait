@@ -1,0 +1,25 @@
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="footer-tagline">{{ site.description }}</p>
+
+    {% if site.data.projects %}
+    <nav class="footer-projects" aria-label="Other projects">
+      {% for group in site.data.projects %}
+      <div class="footer-projects-group">
+        <span class="footer-projects-label">{{ group.label }}</span>
+        <ul>
+          {% for project in group.items %}
+          <li><a href="{{ project.url }}">{{ project.name }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+    </nav>
+    {% endif %}
+
+    <p class="footer-meta">
+      &copy; {{ site.time | date: "%Y" }} {{ site.title }} &mdash; built with <a href="https://jekyllrb.com">Jekyll</a>
+      {% if site.github_username %} &middot; <a href="https://github.com/{{ site.github_username }}">GitHub</a>{% endif %}
+    </p>
+  </div>
+</footer>

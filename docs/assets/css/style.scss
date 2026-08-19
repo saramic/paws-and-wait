@@ -1,0 +1,394 @@
+---
+---
+
+// -----------------------------------------------------------------------
+// Paws and Wait theme
+// "Detection Bowl" — colour palette lifted from a German Shorthaired
+// Pointer: liver-brown and white/roan coat, warm amber eyes. The amber
+// doubles as the AI object-detection HUD accent (bounding-box corners,
+// monospace readouts) for the compute/vision side — the eyes are the sensor.
+// -----------------------------------------------------------------------
+
+:root {
+  --coat: #f5eee1;
+  --coat-dark: #e6d7bd;
+  --liver: #8a5638;
+  --liver-dark: #4d2c1a;
+  --amber: #c98a3c;
+  --amber-dark: #97641f;
+  --amber-bright: #f0aa4d;
+  --alert: #c1452a;
+  --ink: #2b2015;
+  --paper: #fdf6ea;
+
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-head: "Baloo 2", var(--font-body);
+  --font-meta: "JetBrains Mono", "Courier New", monospace;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background-color: var(--coat);
+  background-image:
+    radial-gradient(circle at 8px 8px, rgba(77, 44, 26, 0.09) 2px, transparent 2px);
+  background-size: 26px 26px;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.wrap {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+a {
+  color: var(--amber-dark);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
+a:hover { color: var(--alert); }
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  background: var(--ink);
+  color: var(--amber-bright);
+  padding: 8px 16px;
+  z-index: 100;
+}
+.skip-link:focus { left: 0; }
+
+// ---- Header: liver-and-white coat --------------------------------------
+
+.site-header {
+  background: linear-gradient(160deg, var(--liver) 0%, var(--liver-dark) 100%);
+  box-shadow: 0 3px 0 var(--amber-dark);
+
+  .wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+
+.site-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--paper);
+  text-decoration: none;
+}
+.site-brand:hover { color: var(--amber-bright); }
+
+.brand-text {
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 1.4rem;
+  letter-spacing: 0.2px;
+}
+
+.site-nav {
+  display: flex;
+  gap: 4px;
+}
+.site-nav a {
+  color: var(--paper);
+  text-decoration: none;
+  font-family: var(--font-meta);
+  font-size: 0.92rem;
+  letter-spacing: 0.3px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+}
+.site-nav a:hover {
+  color: var(--amber-bright);
+  border-color: rgba(240, 170, 77, 0.5);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+// ---- Main ---------------------------------------------------------------
+
+.site-main {
+  padding: 40px 0 60px;
+  min-height: 60vh;
+}
+
+.home-intro {
+  margin-bottom: 36px;
+  padding-bottom: 20px;
+  border-bottom: 2px dashed var(--coat-dark);
+  font-size: 1.08rem;
+}
+
+.feed-heading {
+  font-family: var(--font-meta);
+  color: var(--amber-dark);
+  font-size: 1.05rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 18px;
+
+  &::before { content: "▣ "; }
+}
+
+.feed-empty {
+  font-family: var(--font-meta);
+  font-size: 1rem;
+  color: var(--liver-dark);
+}
+
+// ---- Post cards: detection frames ---------------------------------------
+// Corner-bracket "bounding box" frame built from layered background
+// gradients (no extra markup needed) — brightens on hover like a
+// re-acquired detection target.
+
+.post-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+@mixin detection-frame($color, $inset: 0px, $len: 16px, $thick: 3px) {
+  background-image:
+    linear-gradient(to right, $color $thick, transparent $thick),
+    linear-gradient(to bottom, $color $thick, transparent $thick),
+    linear-gradient(to left, $color $thick, transparent $thick),
+    linear-gradient(to bottom, $color $thick, transparent $thick),
+    linear-gradient(to right, $color $thick, transparent $thick),
+    linear-gradient(to top, $color $thick, transparent $thick),
+    linear-gradient(to left, $color $thick, transparent $thick),
+    linear-gradient(to top, $color $thick, transparent $thick);
+  background-repeat: no-repeat;
+  background-size: $len $len;
+  background-position:
+    top $inset left $inset, top $inset left $inset,
+    top $inset right $inset, top $inset right $inset,
+    bottom $inset left $inset, bottom $inset left $inset,
+    bottom $inset right $inset, bottom $inset right $inset;
+}
+
+.post-card {
+  position: relative;
+  background-color: var(--coat-dark);
+  border-radius: 6px;
+  padding: 18px 20px;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+  @include detection-frame(var(--amber), 6px);
+}
+.post-card:hover {
+  transform: translateY(-2px);
+  @include detection-frame(var(--amber-bright), 4px, 20px, 4px);
+}
+
+.post-card-link {
+  color: inherit;
+  text-decoration: none;
+  display: block;
+}
+
+.post-card-date {
+  display: inline-block;
+  font-family: var(--font-meta);
+  font-size: 0.85rem;
+  color: var(--amber-dark);
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.post-card-title {
+  font-family: var(--font-head);
+  font-weight: 600;
+  margin: 0 0 6px;
+  font-size: 1.3rem;
+  color: var(--ink);
+}
+
+.post-card-excerpt {
+  margin: 0;
+  color: var(--liver-dark);
+  font-size: 0.98rem;
+}
+
+.post-card-tags {
+  margin-top: 10px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tag-chip {
+  font-family: var(--font-meta);
+  font-size: 0.82rem;
+  letter-spacing: 0.3px;
+  padding: 3px 10px;
+  color: var(--ink);
+  border-radius: 999px;
+  background: var(--amber);
+  &::before { content: "🐾 "; }
+}
+
+// ---- Single post / page --------------------------------------------------
+
+.post-header,
+.page-title {
+  margin-bottom: 24px;
+}
+
+.post-meta {
+  font-family: var(--font-meta);
+  font-size: 0.92rem;
+  color: var(--amber-dark);
+  letter-spacing: 0.5px;
+  margin: 0 0 6px;
+}
+
+.post-title,
+.page-title {
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 2rem;
+  line-height: 1.2;
+  margin: 0;
+  color: var(--ink);
+}
+
+.post-content,
+.page-content {
+  margin-top: 20px;
+
+  h2, h3, h4 { font-family: var(--font-head); font-weight: 600; color: var(--liver-dark); }
+
+  img {
+    max-width: 100%;
+    border-radius: 6px;
+    @include detection-frame(var(--amber), 0px, 18px, 3px);
+    padding: 3px;
+  }
+
+  code {
+    font-family: var(--font-meta);
+    background: var(--coat-dark);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.95em;
+  }
+
+  pre {
+    background: var(--ink);
+    color: var(--amber-bright);
+    padding: 14px 16px;
+    border-radius: 4px;
+    overflow-x: auto;
+    border-left: 4px solid var(--amber);
+
+    code { background: none; padding: 0; color: inherit; }
+  }
+
+  blockquote {
+    border-left: 4px solid var(--amber);
+    margin-left: 0;
+    padding: 2px 16px;
+    color: var(--liver-dark);
+    font-style: italic;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+
+    th, td { border: 1px solid var(--coat-dark); padding: 6px 10px; text-align: left; }
+    th { font-family: var(--font-meta); background: var(--coat-dark); }
+  }
+}
+
+.post-pagination {
+  margin-top: 36px;
+  padding-top: 16px;
+  border-top: 2px dashed var(--coat-dark);
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-meta);
+  font-size: 0.95rem;
+
+  a { text-decoration: none; }
+}
+
+// ---- Footer: status bar --------------------------------------------------
+
+.site-footer {
+  background: var(--ink);
+  color: var(--coat);
+  padding: 18px 0 24px;
+  margin-top: 40px;
+
+  a { color: var(--amber-bright); }
+
+  .footer-tagline {
+    margin: 0 0 6px;
+    font-family: var(--font-meta);
+    font-size: 0.95rem;
+
+    &::before { content: "● "; color: var(--amber-bright); }
+  }
+
+  .footer-projects {
+    margin: 14px 0;
+    font-family: var(--font-meta);
+    font-size: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    .footer-projects-label {
+      display: block;
+      margin-bottom: 6px;
+      opacity: 0.75;
+      &::before { content: "▣ "; }
+    }
+
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 0;
+    }
+
+    li {
+      &::after { content: " ·"; opacity: 0.5; margin-right: 10px; }
+      &:last-child::after { content: ""; margin-right: 0; }
+    }
+  }
+
+  .footer-meta {
+    margin: 0;
+    font-family: var(--font-meta);
+    font-size: 0.82rem;
+    opacity: 0.75;
+  }
+}
+
+// ---- Responsive ------------------------------------------------------------
+
+@media (max-width: 480px) {
+  .brand-text { font-size: 1.15rem; }
+  .post-title, .page-title { font-size: 1.6rem; }
+}

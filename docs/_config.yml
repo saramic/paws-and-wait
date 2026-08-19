@@ -31,7 +31,9 @@ url: "https://saramic.github.io" # the base hostname & protocol for your site, e
 timezone: Australia/Melbourne
 
 # Build settings
-theme: minima
+# Custom theme lives in _layouts/, _includes/, and assets/css/style.scss
+# (no theme gem — see https://jekyllrb.com/docs/themes/#creating-a-gem-based-theme
+# for why a plain repo-local theme is the simpler path for GitHub Pages)
 plugins:
   - jekyll-feed
 

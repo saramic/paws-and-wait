@@ -1,0 +1,30 @@
+---
+layout: default
+---
+<div class="home-intro">
+  {{ content }}
+</div>
+
+<div class="post-feed">
+  <h2 class="feed-heading">Detection Log</h2>
+  {% if site.posts.size > 0 %}
+  <ul class="post-list">
+    {% for post in site.posts %}
+    <li class="post-card">
+      <a class="post-card-link" href="{{ post.url | relative_url }}">
+        <span class="post-card-date">{{ post.date | date: "%Y.%m.%d" }}</span>
+        <h3 class="post-card-title">{{ post.title }}</h3>
+        {% if post.excerpt %}<p class="post-card-excerpt">{{ post.excerpt | strip_html | truncate: 140 }}</p>{% endif %}
+      </a>
+      {% if post.categories.size > 0 %}
+      <div class="post-card-tags">
+        {% for cat in post.categories %}<span class="tag-chip">{{ cat }}</span>{% endfor %}
+      </div>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="feed-empty">No detections yet. Bowl is watching.</p>
+  {% endif %}
+</div>
