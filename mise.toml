@@ -1,0 +1,11 @@
+[tools]
+ruby = "3.2.2"
+
+[tasks."dev-blog"]
+description = "run Jekyll dev blog - https://tamadillo.github.io/hall-w-EV/"
+run = """
+    pushd docs && \
+        bundle && \
+        bundle exec jekyll serve --port 8888 && \
+        popd
+"""

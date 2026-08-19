@@ -1,8 +1,36 @@
 # Work Log
 
-## Tue 18 Aug 2026
-
 ## Wed 19 Aug 2026
+
+### Blog setup
+
+Based on
+
+- [https://github.com/saramic/vape-cell-EV/commit/60733c2ceb1aca705c3f8076d91916f447fb7965](
+   https://github.com/saramic/vape-cell-EV/commit/60733c2ceb1aca705c3f8076d91916f447fb7965)
+
+
+```sh
+mise use ruby@3.2.2
+gem install jekyll bundler
+jekyll new docs
+
+cd docs
+
+# downgrade jekyll to 3.9.5
+# gem "jekyll", "~> 3.9.5" # to work with github-pages
+bundle add github-pages webrick
+
+# configure the _config.yml
+
+# run
+bundle exec jekyll serve --port 8888
+
+# open
+http://127.0.0.1:8888/vape-cell-EV/
+```
+
+### Plan
 
 Drafted the Week 1 plan below from `reference/SUBMISSION.pdf` (Phases 1A–1C) ahead of
 hardware arriving. Kit on order: CM5104032 (4GB RAM / 32GB eMMC / Wireless) Dev Kit —
