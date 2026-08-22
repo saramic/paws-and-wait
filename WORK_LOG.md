@@ -1,5 +1,150 @@
 # Work Log
 
+## Sat 22 Aug 2026
+
+### Soundboard on quintessa (soundboard-cm5)
+
+Built a minimal soundboard app for quintessa: tap a button to play an MP3
+(auto-discovered from `app/sounds/`, no restart needed), or type text to
+have it spoken via Piper neural TTS (picked over `espeak-ng` — noticeably
+more natural, still real-time on the CM5's 4 Cortex-A76 cores). Plain
+Flask + systemd, no Docker/app-framework — this is bare Raspberry Pi OS,
+not the UNO Q's Arduino App Lab.
+
+`soundboard-cm5/mise.toml`'s `install`/`start` tasks automate all of this
+— this is what they actually do, kept here in case the board needs
+re-provisioning from scratch and the mise tasks aren't handy:
+
+```sh
+# system package (mp3 playback)
+sudo apt-get update -qq
+sudo apt-get install -y mpg123
+
+# python deps, in a venv (system Python is externally-managed on trixie —
+# plain `pip install` refuses without one)
+cd soundboard-cm5/app
+python3 -m venv venv
+./venv/bin/pip install -q -r requirements.txt   # flask, piper-tts
+
+# Piper voice model — en_US-lessac-medium chosen as a solid natural-sounding
+# default. Voices live at huggingface.co/rhasspy/piper-voices under
+# <lang>/<lang_region>/<voice>/<quality>/<lang_region>-<voice>-<quality>.onnx(.json)
+# — swap the path below to try a different voice.
+mkdir -p soundboard-cm5/voices
+cd soundboard-cm5/voices
+curl -sL -o en_US-lessac-medium.onnx \
+  "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx"
+curl -sL -o en_US-lessac-medium.onnx.json \
+  "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json"
+
+# systemd unit — autostarts on boot, restarts on crash
+sudo cp soundboard-cm5/systemd/soundboard.service /etc/systemd/system/soundboard.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now soundboard.service
+```
+
+Playback device is auto-detected via `aplay -l` (looks for a `USB Audio`
+card) rather than hardcoded, same fix as `training-w-uno-q`'s `amixer`
+issue on pollyanna — card indices aren't stable across reboots.
+
+Two of the steps above need an interactive terminal (`sudo apt-get
+install`, the systemd unit copy) — there's no passwordless sudo configured
+on quintessa, so `mise run install`/`start` use `ssh -t` and prompt for the
+password when run by hand; they can't be driven headlessly.
+
+**Ansible/config-management question**: asked whether to move this kind of
+provisioning to Ansible instead of mise+ssh+rsync. For now, no — at this
+scale (two or three personal boards, infrequent re-provisioning) mise
+tasks are simpler and more transparent (plain shell, no extra tool to
+learn). Ansible's real win is idempotency and reuse across *many* hosts,
+which doesn't apply yet. Worth revisiting if this grows into provisioning
+several feeder units at once, or re-flashing often enough that "did this
+step already run" starts to matter.
+
+### Post 1 (draft) — Unboxing the kit, and wrangling an OS onto it
+
+Kit arrived earlier this week; today was unboxing + first boot day. Draft
+below — to be cleaned up and moved into `docs/_posts/` once it's ready.
+
+---
+
+The [Raspberry Pi Compute Module 5 Development Kit](https://www.raspberrypi.com/products/cm5-dev-kit/)
+for this RoadTest turned up earlier this week, and Saturday was unboxing
+day. This post is the boring-but-necessary bit before any dog-feeder logic
+happens: what's actually in the box, putting it together, and getting an
+OS onto it.
+
+#### What's in the box
+
+The kit is a CM5 Wireless (4GB RAM / 32GB eMMC), the CM5 IO Board pre-fitted
+inside the IO Case, the official cooler, an antenna kit, a 27W USB-C PD
+power supply, two HDMI-to-HDMI cables, and a USB-A to USB-C cable.
+
+*(Unboxing photos to follow — got a full set of the boxes and contents,
+just need to pull them off my phone.)*
+
+Packaging and build quality are genuinely nice — everything sits in its own
+tray, cables included, a pleasure to actually unpack. A few things were
+missing that would've smoothed the first hour out, though:
+
+- **No USB-C wall plug with an AU pin adapter.** The PD supply itself is
+  fine, just needed my own adapter to actually get it into a wall socket
+  here.
+- **No spare jumper for the boot-mode header.** Forcing USB boot mode
+  needs a small 2-pin shorting jumper on J2, and the kit doesn't include a
+  spare one. Had to raid an old parts bin for it — worth having a couple of
+  2.54mm jumpers on hand before you start.
+- **No CR2032 RTC battery.** Probably fine for this build — it's always
+  networked and always powered, so losing the clock across a power cycle
+  isn't a real problem — but worth knowing it's not in the box if you were
+  expecting it.
+
+#### Working out how it goes together
+
+The kit ships with a stack of datasheets rather than one guide, and it
+wasn't immediately obvious which document actually covers the physical
+assembly — seating the CM5 onto the IO Board and closing up the IO Case.
+Once I found the right pictures there really was only one way it could go
+together, which helped, but a single quick-start card in the box pointing
+at "open here for assembly" would have saved some flipping between PDFs.
+
+Actually getting the board seated and screwed into the case was fiddlier
+than expected in practice: four screws, four spacers, and making sure the
+cooler and its fan cable landed correctly along the way, all in a fairly
+tight fit. Nothing went wrong, it just took more care than I expected for
+what's ultimately a four-screw job.
+
+#### First boot: no surprises, no OS either
+
+Before touching anything else, I hooked it up to a monitor just to see what
+happened. No surprise, really — the bootloader was upfront that there was
+no bootable image on the eMMC, and dropped straight to looking for a
+network boot server instead. Presumably that's a real option if you've got
+a PXE-style network-boot server sitting on the LAN already, but that's not
+something I have set up, so: on to imaging the eMMC directly instead.
+
+#### Flashing the eMMC
+
+The process is: fit the boot-mode jumper, connect USB-C from the board's
+slave port to a computer, then use that computer to write an OS onto the
+eMMC over USB rather than booting from it.
+
+Raspberry Pi Imager was the obvious first tool, but on its own it couldn't
+find the board at all — no drive showed up anywhere for it to target.
+Downloading the separate [`rpiboot`](https://github.com/raspberrypi/usbboot)
+utility and running that directly fixed it immediately: it found the board
+straight away and confirmed the eMMC as 32GB. From there, Imager's normal
+prompts took over — creating a user account, enabling SSH, and setting a
+hostname. In keeping with the household convention (Pollyanna and Athena
+are already on the network), this one's called **Quintessa**.
+
+#### What's next
+
+With an OS actually on the eMMC, next is booting it for real and getting
+in over SSH, then working through the rest of the Week 1 checklist: basic
+IO sanity checks, getting both camera modules up, and a CPU-only inference
+baseline to compare against once the Hailo-8L accelerator is in.
+
 ## Wed 19 Aug 2026
 
 ### Blog setup
@@ -44,17 +189,17 @@ This is the "Unboxing post + hardware quality review + camera and baseline CPU
 benchmark results" deliverable for Week 1.
 
 ### Day 1 — Unbox & flash (Phase 1A.1)
-- [ ] Photograph the unboxing (kit contents, board close-ups) for the write-up
-- [ ] Inspect CM5 module and IO Board for shipping damage, confirm CM5 is seated
+- [x] Photograph the unboxing (kit contents, board close-ups) for the write-up
+- [x] Inspect CM5 module and IO Board for shipping damage, confirm CM5 is seated
       correctly on the IO Board's high-density connector
-- [ ] Fit the cooler + case fan, connect the antenna kit
-- [ ] Set the IO Board's boot-mode switch to USB-boot (nRPIBOOT) per the quick-start
+- [x] Fit the cooler + case fan, connect the antenna kit
+- [x] Set the IO Board's boot-mode switch to USB-boot (nRPIBOOT) per the quick-start
       card in the box, connect USB-C from the IO Board to a host machine
-- [ ] Flash Raspberry Pi OS (64-bit) to the 32GB eMMC using Raspberry Pi Imager
+- [x] Flash Raspberry Pi OS (64-bit) to the 32GB eMMC using Raspberry Pi Imager
       (it drives rpiboot automatically once the board enumerates as a mass-storage
       device) — enable SSH + set hostname/user in the Imager's advanced options
       before writing, to skip first-boot setup
-- [ ] Flip the boot switch back to eMMC boot, disconnect from the host, connect
+- [x] Flip the boot switch back to eMMC boot, disconnect from the host, connect
       power via the 27W PSU
 
 ### Day 2 — First boot & IO sanity check (Phase 1A.2)

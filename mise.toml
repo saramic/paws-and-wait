@@ -1,6 +1,10 @@
 [tools]
 ruby = "3.2.2"
 
+[tasks.install]
+description = "install dependencies, assuming homebrew"
+run = "brew bundle --file Brewfile"
+
 [tasks."dev-blog"]
 description = "run Jekyll dev blog - https://tamadillo.github.io/hall-w-EV/"
 run = """
