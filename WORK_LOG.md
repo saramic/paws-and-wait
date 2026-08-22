@@ -27,7 +27,7 @@ bundle add github-pages webrick
 bundle exec jekyll serve --port 8888
 
 # open
-http://127.0.0.1:8888/vape-cell-EV/
+http://127.0.0.1:8888/paws-and-wait/
 ```
 
 ### Plan

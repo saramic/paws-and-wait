@@ -1,0 +1,79 @@
+[tasks.install]
+description = "Install local dependencies (this app is Linux-side only — no sketch/ to compile, so no arduino-cli toolchain needed)"
+run = """
+  echo 'No local build toolchain required — training-w-uno-q has no sketch/ (see docs.arduino.cc/software/app-lab, sketch is optional).' && \
+  echo 'Just make sure the "pollyanna" host in ~/.ssh/config is reachable: ssh pollyanna true'
+"""
+
+[tasks."gen-placeholder-audio"]
+description = "Generate placeholder spoken-word MP3s (dinner/sit/wait/ok) via macOS `say` + ffmpeg, so the board has something to play before real recordings exist"
+run = """
+  set -e
+  cd python/static/commands
+  for pair in dinner:Dinner sit:Sit wait:Wait ok:OK; do
+    key="${pair%%:*}"
+    word="${pair##*:}"
+    say -v Samantha -o "$key.aiff" "$word"
+    ffmpeg -y -loglevel error -i "$key.aiff" -codec:a libmp3lame -qscale:a 4 "$key.mp3"
+    rm "$key.aiff"
+  done
+  echo "Generated placeholder MP3s in python/static/commands/ — replace with real recordings any time."
+"""
+
+[tasks.upload]
+description = "Upload the UNO Q app (app.yaml/python) to the board"
+run = [
+  """
+  ssh pollyanna 'mkdir -p /home/arduino/ArduinoApps/training-w-uno-q'
+  """,
+  """
+  rsync -av \
+    --exclude='.cache/' \
+    --exclude='__pycache__/' \
+    --exclude='*.pyc' \
+    app.yaml python \
+    pollyanna:~/ArduinoApps/training-w-uno-q/
+  """
+]
+
+[tasks.start]
+description = "Start the UNO Q app on the board"
+run = [
+  """
+  ssh pollyanna 'arduino-app-cli app start /home/arduino/ArduinoApps/training-w-uno-q'
+  """
+]
+
+[tasks.stop]
+description = "Stop the UNO Q app on the board"
+run = [
+  """
+  ssh pollyanna 'arduino-app-cli app stop /home/arduino/ArduinoApps/training-w-uno-q'
+  """
+]
+
+[tasks."deploy"]
+description = "Upload and (re)start in one go — the everyday deploy-and-test loop"
+depends = ["upload"]
+run = [
+  """
+  ssh pollyanna 'arduino-app-cli app stop /home/arduino/ArduinoApps/training-w-uno-q || true'
+  """,
+  """
+  ssh pollyanna 'arduino-app-cli app start /home/arduino/ArduinoApps/training-w-uno-q'
+  """
+]
+
+[tasks."syslog:pollyanna"]
+description = "System log the pollyanna"
+run = [
+  "ssh pollyanna 'journalctl -f'",
+]
+
+[tasks."set-start-on-reboot:pollyanna"]
+description = "Make training-w-uno-q on pollyanna survive a reboot"
+run = "ssh pollyanna 'arduino-app-cli properties set default user:training-w-uno-q'"
+
+[tasks."unset-start-on-reboot:pollyanna"]
+description = "Stop training-w-uno-q on pollyanna auto-starting after a reboot"
+run = "ssh pollyanna 'arduino-app-cli properties set default none'"

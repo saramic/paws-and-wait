@@ -1,0 +1,4 @@
+name: Training Commands
+description: Soundboard for the dinner / sit / wait / OK training commands
+icon: 🐾
+ports: [8080]
