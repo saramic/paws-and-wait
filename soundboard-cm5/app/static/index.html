@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Soundboard — Paws and Wait</title>
+
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M6,18 L6,6 L18,6' fill='none' stroke='%23c98a3c' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M46,6 L58,6 L58,18' fill='none' stroke='%23c98a3c' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M6,46 L6,58 L18,58' fill='none' stroke='%23c98a3c' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M58,46 L58,58 L46,58' fill='none' stroke='%23c98a3c' stroke-width='3' stroke-linecap='round'/%3E%3Cellipse cx='32' cy='42' rx='13' ry='10' fill='%238a5638'/%3E%3Ccircle cx='16' cy='26' r='6' fill='%238a5638'/%3E%3Ccircle cx='25' cy='17' r='6.5' fill='%238a5638'/%3E%3Ccircle cx='39' cy='17' r='6.5' fill='%238a5638'/%3E%3Ccircle cx='48' cy='26' r='6' fill='%238a5638'/%3E%3C/svg%3E">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* Same "Detection Bowl" palette as the paws-and-wait blog and training-w-uno-q */
+    :root {
+      --coat: #f5eee1;
+      --coat-dark: #e6d7bd;
+      --liver: #8a5638;
+      --liver-dark: #4d2c1a;
+      --amber: #c98a3c;
+      --amber-dark: #97641f;
+      --amber-bright: #f0aa4d;
+      --alert: #c1452a;
+      --ink: #2b2015;
+      --paper: #fdf6ea;
+
+      --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-head: "Baloo 2", var(--font-body);
+      --font-meta: "JetBrains Mono", "Courier New", monospace;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background-color: var(--coat);
+      background-image: radial-gradient(circle at 8px 8px, rgba(77, 44, 26, 0.09) 2px, transparent 2px);
+      background-size: 26px 26px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.6;
+      user-select: none;
+    }
+
+    .wrap { max-width: 640px; margin: 0 auto; padding: 0 24px; }
+
+    /* ---- Header ---------------------------------------------------------- */
+    .site-header {
+      background: linear-gradient(160deg, var(--liver) 0%, var(--liver-dark) 100%);
+      box-shadow: 0 3px 0 var(--amber-dark);
+    }
+    .site-header .wrap {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-top: 16px; padding-bottom: 16px; flex-wrap: wrap; gap: 10px;
+    }
+    .site-brand { display: flex; align-items: center; gap: 10px; color: var(--paper); text-decoration: none; }
+    .site-brand:hover { color: var(--amber-bright); }
+    .brand-text { font-family: var(--font-head); font-weight: 600; font-size: 1.4rem; letter-spacing: 0.2px; }
+
+    .site-nav a {
+      color: var(--paper); text-decoration: none; font-family: var(--font-meta);
+      font-size: 0.92rem; letter-spacing: 0.3px; padding: 6px 12px;
+      border-radius: 4px; border: 1px solid transparent;
+    }
+    .site-nav a:hover { color: var(--amber-bright); border-color: rgba(240, 170, 77, 0.5); background: rgba(0,0,0,0.15); }
+
+    /* ---- Main ------------------------------------------------------------ */
+    main { padding: 32px 0 50px; }
+
+    .page-title { font-family: var(--font-head); font-weight: 600; font-size: 1.7rem; margin: 0 0 4px; }
+    .page-meta {
+      font-family: var(--font-meta); font-size: 0.95rem; color: var(--amber-dark);
+      letter-spacing: 0.5px; text-transform: uppercase; margin: 0 0 18px;
+    }
+
+    .conn {
+      display: inline-block; font-family: var(--font-meta); font-size: 0.9rem;
+      letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 22px;
+      padding: 3px 10px; border-radius: 3px; border: 1px solid var(--liver-dark);
+      background: var(--ink); color: var(--coat-dark);
+    }
+    .conn.ok  { color: #7fae63; border-color: #7fae63; }
+    .conn.bad { color: var(--alert); border-color: var(--alert); }
+    .conn::before { content: "● "; }
+
+    /* ---- Sound grid: detection-frame corner brackets, auto-fill ----------- */
+    .sound-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .sound-empty {
+      font-family: var(--font-meta); font-size: 0.95rem; color: var(--liver-dark);
+      padding: 20px; text-align: center; background: var(--coat-dark);
+      border-radius: 8px; margin-bottom: 20px;
+    }
+
+    .snd-btn {
+      position: relative;
+      aspect-ratio: 1;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 6px;
+      background-color: var(--coat-dark);
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      cursor: pointer;
+      background-image:
+        linear-gradient(to right, var(--amber) 3px, transparent 3px),
+        linear-gradient(to bottom, var(--amber) 3px, transparent 3px),
+        linear-gradient(to left, var(--amber) 3px, transparent 3px),
+        linear-gradient(to bottom, var(--amber) 3px, transparent 3px),
+        linear-gradient(to right, var(--amber) 3px, transparent 3px),
+        linear-gradient(to top, var(--amber) 3px, transparent 3px),
+        linear-gradient(to left, var(--amber) 3px, transparent 3px),
+        linear-gradient(to top, var(--amber) 3px, transparent 3px);
+      background-repeat: no-repeat;
+      background-size: 18px 18px;
+      background-position:
+        top 6px left 6px, top 6px left 6px,
+        top 6px right 6px, top 6px right 6px,
+        bottom 6px left 6px, bottom 6px left 6px,
+        bottom 6px right 6px, bottom 6px right 6px;
+      transition: transform 0.1s ease, background-color 0.1s ease;
+    }
+    .snd-btn:active,
+    .snd-btn.playing {
+      transform: translateY(1px);
+      background-color: var(--amber);
+      background-size: 26px 26px;
+    }
+    .snd-btn .snd-emoji { font-size: 1.8rem; line-height: 1; }
+    .snd-btn .snd-label {
+      font-family: var(--font-head); font-weight: 600; font-size: 0.95rem; color: var(--ink);
+      text-align: center; word-break: break-word;
+    }
+
+    .stop-btn {
+      width: 100%; margin-bottom: 24px; padding: 0.8rem;
+      font-family: var(--font-head); font-weight: 700; font-size: 1rem;
+      color: var(--paper); background: var(--alert);
+      border: 3px solid var(--ink); border-radius: 8px; cursor: pointer;
+    }
+    .stop-btn:active { filter: brightness(0.85); }
+
+    /* ---- Speak crate --------------------------------------------------- */
+    .crate {
+      position: relative;
+      background: var(--coat-dark);
+      border: 2px solid var(--amber-dark);
+      border-left: 8px solid var(--amber);
+      border-radius: 4px;
+      padding: 18px 18px 16px;
+      margin-bottom: 20px;
+    }
+    .crate-title {
+      font-family: var(--font-meta); font-size: 0.92rem; color: var(--amber-dark);
+      letter-spacing: 1px; text-transform: uppercase; margin: 0 0 14px;
+    }
+
+    .volume-row { display: flex; align-items: center; gap: 10px; }
+    .volume-icon { font-size: 1.2rem; }
+    #volumeSlider { flex: 1; height: 28px; -webkit-appearance: none; appearance: none; background: transparent; }
+    #volumeSlider::-webkit-slider-runnable-track {
+      height: 8px; border-radius: 4px;
+      background: linear-gradient(90deg, var(--liver) 0%, var(--amber) 70%, var(--amber-bright) 100%);
+      border: 1px solid var(--ink);
+    }
+    #volumeSlider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 24px; height: 24px; margin-top: -9px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, var(--amber-bright), var(--amber) 70%);
+      border: 2px solid var(--ink);
+    }
+    #volumeSlider::-moz-range-track {
+      height: 8px; border-radius: 4px;
+      background: linear-gradient(90deg, var(--liver) 0%, var(--amber) 70%, var(--amber-bright) 100%);
+      border: 1px solid var(--ink);
+    }
+    #volumeSlider::-moz-range-thumb {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, var(--amber-bright), var(--amber) 70%);
+      border: 2px solid var(--ink);
+    }
+    #volumeReadout { font-family: var(--font-meta); font-size: 1.05rem; color: var(--amber-dark); min-width: 3.2rem; text-align: right; }
+
+    .speak-row { display: flex; gap: 8px; }
+    #speakText {
+      flex: 1; padding: 10px; font-family: var(--font-body); font-size: 0.95rem;
+      border: 2px solid var(--liver); border-radius: 6px; background: var(--paper);
+      color: var(--ink); min-width: 0;
+    }
+    #speakBtn {
+      padding: 10px 16px; font-family: var(--font-head); font-weight: 700;
+      color: var(--paper); background: var(--liver); border: 2px solid var(--ink);
+      border-radius: 6px; cursor: pointer;
+    }
+    #speakBtn:active { filter: brightness(0.85); }
+    .speak-hint {
+      font-family: var(--font-meta); font-size: 0.82rem; color: var(--liver-dark);
+      margin: 10px 0 0;
+    }
+
+    .sound-error {
+      margin-top: 12px; padding: 8px 12px; border-radius: 4px;
+      background: var(--ink); border: 1px solid var(--alert);
+      color: var(--amber-bright); font-family: var(--font-meta); font-size: 0.95rem;
+      letter-spacing: 0.3px; word-break: break-word;
+      -webkit-user-select: text; user-select: text; cursor: text;
+    }
+    .sound-error::before { content: "⚠ "; }
+
+    .hint {
+      font-family: var(--font-meta); font-size: 0.85rem; color: var(--liver-dark);
+      text-align: center; margin-top: 4px; letter-spacing: 0.2px;
+    }
+    .hint code {
+      background: var(--coat-dark); padding: 1px 5px; border-radius: 3px;
+    }
+
+    /* ---- Footer ------------------------------------------------------------ */
+    .site-footer {
+      background: var(--ink); color: var(--coat);
+      padding: 18px 0 24px; text-align: center;
+    }
+    .site-footer a { color: var(--amber-bright); }
+    .site-footer p { margin: 0; font-family: var(--font-meta); font-size: 0.92rem; letter-spacing: 0.3px; }
+
+    @media (max-width: 420px) {
+      .page-title { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="site-brand" href="https://saramic.github.io/paws-and-wait/" target="_blank" rel="noopener">
+        <svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true">
+          <path d="M6,18 L6,6 L18,6" fill="none" stroke="var(--amber)" stroke-width="3" stroke-linecap="round"/>
+          <path d="M46,6 L58,6 L58,18" fill="none" stroke="var(--amber)" stroke-width="3" stroke-linecap="round"/>
+          <path d="M6,46 L6,58 L18,58" fill="none" stroke="var(--amber)" stroke-width="3" stroke-linecap="round"/>
+          <path d="M58,46 L58,58 L46,58" fill="none" stroke="var(--amber)" stroke-width="3" stroke-linecap="round"/>
+          <ellipse cx="32" cy="42" rx="13" ry="10" fill="var(--paper)"/>
+          <circle cx="16" cy="26" r="6" fill="var(--paper)"/>
+          <circle cx="25" cy="17" r="6.5" fill="var(--paper)"/>
+          <circle cx="39" cy="17" r="6.5" fill="var(--paper)"/>
+          <circle cx="48" cy="26" r="6" fill="var(--paper)"/>
+        </svg>
+        <span class="brand-text">Paws and Wait</span>
+      </a>
+      <nav class="site-nav">
+        <a href="https://saramic.github.io/paws-and-wait/" target="_blank" rel="noopener">Blog ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <h1 class="page-title">Soundboard</h1>
+      <p class="page-meta">CM5 — quintessa</p>
+      <div class="conn" id="conn">connecting</div>
+
+      <div class="crate">
+        <h2 class="crate-title">Volume</h2>
+        <div class="volume-row">
+          <span class="volume-icon">🔊</span>
+          <input type="range" id="volumeSlider" min="0" max="100" value="70">
+          <span id="volumeReadout">--%</span>
+        </div>
+      </div>
+
+      <div id="soundGrid" class="sound-grid"></div>
+      <div id="soundEmpty" class="sound-empty" hidden>
+        No sounds yet — drop an MP3 into <code>app/sounds/</code> and reload.
+      </div>
+
+      <button class="stop-btn" id="stopBtn">⏹ Stop</button>
+
+      <div class="crate">
+        <h2 class="crate-title">Speak</h2>
+        <div class="speak-row">
+          <input type="text" id="speakText" placeholder="Type something to say…" maxlength="300">
+          <button id="speakBtn">Speak</button>
+        </div>
+        <p class="speak-hint">Piper neural TTS, synthesized on-device.</p>
+        <div class="sound-error" id="soundError" hidden></div>
+      </div>
+
+      <p class="hint">Sounds are picked up live from <code>app/sounds/*.mp3</code> —
+        no restart needed after adding one.</p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>Paws and Wait — soundboard on the CM5</p>
+    </div>
+  </footer>
+
+  <script>
+    function setConnected(ok) {
+      const el = document.getElementById('conn');
+      el.className = `conn ${ok ? 'ok' : 'bad'}`;
+      el.textContent = ok ? 'connected' : 'connection lost';
+    }
+
+    function showSoundError(message) {
+      const el = document.getElementById('soundError');
+      if (!message) { el.hidden = true; return; }
+      el.hidden = false;
+      el.textContent = message;
+    }
+
+    function soundPost(path, opts) {
+      return fetch(path, { method: 'POST', ...opts })
+        .then(r => r.json().catch(() => ({ ok: r.ok, error: null })).then(data => {
+          setConnected(true);
+          showSoundError(data.ok ? null : (data.error || `${path} failed`));
+          return data;
+        }))
+        .catch(() => { setConnected(false); return null; });
+    }
+
+    function jsonBody(obj) {
+      return { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(obj) };
+    }
+
+    const soundGrid  = document.getElementById('soundGrid');
+    const soundEmpty = document.getElementById('soundEmpty');
+
+    function renderSounds(sounds) {
+      soundGrid.innerHTML = '';
+      soundEmpty.hidden = sounds.length > 0;
+      sounds.forEach(s => {
+        const btn = document.createElement('button');
+        btn.className = 'snd-btn';
+        btn.dataset.name = s.name;
+        btn.innerHTML = `<span class="snd-emoji">🔊</span><span class="snd-label">${s.label}</span>`;
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.snd-btn').forEach(b => b.classList.remove('playing'));
+          btn.classList.add('playing');
+          soundPost(`/api/play/${encodeURIComponent(s.name)}`).then(() => {
+            setTimeout(() => btn.classList.remove('playing'), 400);
+          });
+        });
+        soundGrid.appendChild(btn);
+      });
+    }
+
+    function loadSounds() {
+      fetch('/api/sounds').then(r => r.json()).then(data => {
+        setConnected(true);
+        renderSounds(data.sounds || []);
+      }).catch(() => setConnected(false));
+    }
+
+    document.getElementById('stopBtn').addEventListener('click', () => {
+      document.querySelectorAll('.snd-btn').forEach(b => b.classList.remove('playing'));
+      soundPost('/api/stop');
+    });
+
+    document.getElementById('speakBtn').addEventListener('click', () => {
+      const input = document.getElementById('speakText');
+      const text = input.value.trim();
+      if (!text) return;
+      soundPost('/api/speak', jsonBody({ text }));
+    });
+    document.getElementById('speakText').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('speakBtn').click();
+    });
+
+    loadSounds();
+    // Re-scan periodically so dropping a new MP3 in shows up without a reload.
+    setInterval(loadSounds, 5000);
+
+    // Volume controls the USB speaker's PCM mixer directly. Same
+    // throttle/flush pattern as training-w-uno-q: push amixer changes while
+    // dragging (not just on release), so you hear it settle in as you drag.
+    const SEND_INTERVAL_MS = 80;
+    const volumeSlider  = document.getElementById('volumeSlider');
+    const volumeReadout = document.getElementById('volumeReadout');
+
+    let volumeLastSent = 0;
+    let volumePending  = null;
+
+    function sendVolume(percent, immediate) {
+      const now = Date.now();
+      if (!immediate && now - volumeLastSent < SEND_INTERVAL_MS) {
+        volumePending = percent;
+        return;
+      }
+      volumeLastSent = now;
+      volumePending = null;
+      soundPost('/api/volume', jsonBody({ percent }));
+    }
+
+    volumeSlider.addEventListener('input', () => {
+      const percent = parseInt(volumeSlider.value, 10);
+      volumeReadout.textContent = `${percent}%`;
+      sendVolume(percent, false);
+    });
+    volumeSlider.addEventListener('change', () => {
+      sendVolume(parseInt(volumeSlider.value, 10), true);
+    });
+
+    setInterval(() => {
+      if (volumePending !== null) sendVolume(volumePending, true);
+    }, SEND_INTERVAL_MS);
+
+    fetch('/api/volume').then(r => r.json()).then(data => {
+      if (data.ok) {
+        volumeSlider.value = data.percent;
+        volumeReadout.textContent = `${data.percent}%`;
+      } else {
+        showSoundError(data.error);
+      }
+    }).catch(() => setConnected(false));
+
+    setInterval(() => {
+      fetch('/health').then(r => setConnected(r.ok)).catch(() => setConnected(false));
+    }, 3000);
+    fetch('/health').then(r => setConnected(r.ok)).catch(() => setConnected(false));
+  </script>
+</body>
+</html>

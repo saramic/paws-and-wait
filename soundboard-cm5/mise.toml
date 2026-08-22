@@ -1,0 +1,80 @@
+[tasks.upload]
+description = "rsync app code + systemd unit to quintessa"
+run = [
+  """
+  ssh quintessa 'mkdir -p ~/soundboard-cm5'
+  """,
+  """
+  rsync -av \
+    --exclude='venv/' \
+    --exclude='__pycache__/' \
+    --exclude='*.pyc' \
+    app systemd \
+    quintessa:~/soundboard-cm5/
+  """
+]
+
+[tasks.install]
+description = "Provision quintessa: mpg123, python venv, flask + piper-tts, and a Piper voice model. Run once, and again after changing requirements.txt. Needs an interactive sudo password on quintessa."
+depends = ["upload"]
+run = [
+  """
+  ssh -t quintessa '
+    set -e
+    sudo apt-get update -qq
+    sudo apt-get install -y mpg123
+    cd ~/soundboard-cm5/app
+    [ -d venv ] || python3 -m venv venv
+    ./venv/bin/pip install -q -r requirements.txt
+  '
+  """,
+  """
+  ssh quintessa '
+    set -e
+    mkdir -p ~/soundboard-cm5/voices
+    cd ~/soundboard-cm5/voices
+    [ -f en_US-lessac-medium.onnx ] || curl -sL -o en_US-lessac-medium.onnx \
+      "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx"
+    [ -f en_US-lessac-medium.onnx.json ] || curl -sL -o en_US-lessac-medium.onnx.json \
+      "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json"
+  '
+  """,
+  """
+  ssh -t quintessa '
+    sudo cp ~/soundboard-cm5/systemd/soundboard.service /etc/systemd/system/soundboard.service
+    sudo systemctl daemon-reload
+  '
+  """
+]
+
+[tasks.start]
+description = "Enable + start the soundboard service (survives reboots from here on)"
+run = "ssh -t quintessa 'sudo systemctl enable --now soundboard.service'"
+
+[tasks.stop]
+description = "Stop + disable the soundboard service"
+run = "ssh -t quintessa 'sudo systemctl disable --now soundboard.service'"
+
+[tasks.restart]
+description = "Restart the soundboard service (pick up new main.py/player.py code)"
+run = "ssh -t quintessa 'sudo systemctl restart soundboard.service'"
+
+[tasks.deploy]
+description = "Upload code and restart — the everyday deploy-and-test loop (no sudo needed unless requirements.txt changed, see install)"
+depends = ["upload"]
+run = "ssh -t quintessa 'sudo systemctl restart soundboard.service'"
+
+[tasks."sync-sounds"]
+description = "rsync just the sounds/ folder — for quickly adding new MP3s, no restart or sudo needed"
+run = [
+  "rsync -av app/sounds/ quintessa:~/soundboard-cm5/app/sounds/",
+  "rsync -av ../training-w-uno-q/python/static/commands/ quintessa:~/soundboard-cm5/app/sounds/",
+]
+
+[tasks.logs]
+description = "Tail the soundboard service log"
+run = "ssh quintessa 'journalctl -u soundboard.service -f'"
+
+[tasks.status]
+description = "Check whether the soundboard service is running"
+run = "ssh quintessa 'systemctl status soundboard.service --no-pager'"

@@ -1,0 +1,15 @@
+[Unit]
+Description=Paws and Wait soundboard
+After=network-online.target sound.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/soundboard-cm5/app
+ExecStart=/home/pi/soundboard-cm5/app/venv/bin/python3 main.py
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
